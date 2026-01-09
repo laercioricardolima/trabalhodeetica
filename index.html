@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saúde Pública - Premium Experience</title>
+    
+    <!-- Fontes e Ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- 1. RESET E BASE --- */
+        :root {
+            /* Paleta Medical Red & White - Vibrante */
+            --bg-color: #fff1f2;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            
+            --primary: #e11d48; /* Rose 600 */
+            --primary-dark: #9f1239; /* Rose 800 */
+            --accent: #059669; /* Emerald 600 */
+            --secondary: #4f46e5; /* Indigo 600 */
+            --alert: #ef4444;
+            
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: 1px solid rgba(255, 255, 255, 0.8);
+            --shadow-soft: 0 15px 35px -5px rgba(225, 29, 72, 0.1), 0 5px 15px -5px rgba(0,0,0,0.05);
+            --shadow-hover: 0 25px 50px -12px rgba(225, 29, 72, 0.25);
+            
+            --gradient-text: linear-gradient(135deg, #be123c 0%, #e11d48 50%, #f43f5e 100%);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(-45deg, #fff0f3, #ffffff, #ecfdf5, #ffffff);
+            background-size: 400% 400%;
+            animation: gradientBG 20s ease infinite;
+
+            /* Cursor personalizado (Seringa) */
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48' style='fill:black;font-size:40px;'%3E%3Ctext y='38' x='0'%3E💉%3C/text%3E%3C/svg%3E") 0 24, auto;
+        }
+
+        /* Cursor para links/botões */
+        a, button, .card, .dot, .icon-box, .chart-box {
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewport='0 0 48 48' style='fill:black;font-size:40px;'%3E%3Ctext y='38' x='0'%3E💉%3C/text%3E%3C/svg%3E") 0 24, pointer;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- LOADING SCREEN (INTRODUÇÃO) --- */
+        #intro-loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease 0.5s;
+            overflow: hidden;
+        }
+
+        #intro-loader.hidden {
+            transform: translateY(-100%) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .ekg-wrapper {
+            width: 300px;
+            height: 150px;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ekg-svg { position: absolute; width: 100%; height: 100%; overflow: visible; }
+        .ekg-path {
+            fill: none; stroke: var(--primary); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            animation: drawLine 2.5s ease-out forwards;
+        }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+        .heart-beat {
+            font-size: 100px; color: var(--primary);
+            animation: heartbeat 1.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+            filter: drop-shadow(0 10px 20px rgba(225, 29, 72, 0.3));
+            position: relative; z-index: 2;
+        }
+        @keyframes heartbeat {
+            0% { transform: scale(1); } 14% { transform: scale(1.3); } 28% { transform: scale(1); }
+            42% { transform: scale(1.3); } 70% { transform: scale(1); }
+        }
+
+        .intro-title {
+            font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 800; color: var(--text-color);
+            margin-bottom: 20px; opacity: 0; animation: fadeInUp 1s ease forwards 0.5s; text-align: center;
+        }
+
+        .team-container { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 800px; }
+        .team-pill {
+            background: #fff; padding: 10px 25px; border-radius: 50px;
+            border: 1px solid rgba(225, 29, 72, 0.2);
+            box-shadow: 0 5px 15px rgba(225, 29, 72, 0.05);
+            font-weight: 700; color: var(--text-color); opacity: 0; transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        .team-pill:nth-child(1) { animation-delay: 1.0s; }
+        .team-pill:nth-child(2) { animation-delay: 1.2s; }
+        .team-pill:nth-child(3) { animation-delay: 1.4s; }
+        .team-pill:nth-child(4) { animation-delay: 1.6s; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- BOTÃO PREMIUM PULSANTE (NOVO) --- */
+        .enter-btn {
+            margin-top: 50px;
+            padding: 18px 45px;
+            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            border-radius: 50px;
+            border: 2px solid rgba(255,255,255,0.5);
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(225, 29, 72, 0.4), inset 0 0 0 1px rgba(255,255,255,0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards 2s, btnPulse 2s infinite 3s;
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Efeito de Brilho que passa */
+        .enter-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .enter-btn:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 20px 50px rgba(225, 29, 72, 0.6);
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+            padding-right: 55px; /* Espaço extra para o ícone */
+        }
+
+        .enter-btn:hover::before {
+            left: 100%;
+        }
+        
+        .enter-btn i {
+            transition: transform 0.3s;
+        }
+        
+        .enter-btn:hover i {
+            transform: translateX(5px) scale(1.2);
+        }
+
+        @keyframes btnPulse {
+            0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(225, 29, 72, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+        }
+
+        /* --- 2. CONTAINER DE ROLAGEM --- */
+        .container {
+            width: 100%; height: 100vh; overflow-y: scroll;
+            scroll-snap-type: y mandatory; scroll-behavior: smooth;
+            opacity: 0; transition: opacity 1s ease;
+        }
+        .container.visible { opacity: 1; }
+
+        section {
+            height: 100vh; width: 100%; scroll-snap-align: start;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 40px 5%; position: relative; border-bottom: 1px solid rgba(0,0,0,0.02);
+        }
+
+        /* --- 3. ELEMENTOS DECORATIVOS --- */
+        .bg-heart {
+            position: absolute; color: var(--primary); opacity: 0.05; z-index: -1;
+            animation: floatHeart 8s infinite ease-in-out alternate; filter: blur(1px); pointer-events: none;
+        }
+        .h1 { font-size: 400px; top: -10%; left: -10%; transform: rotate(-20deg); animation-duration: 12s; }
+        .h2 { font-size: 300px; bottom: -5%; right: -5%; transform: rotate(15deg); animation-duration: 15s; opacity: 0.03; }
+        .h3 { font-size: 150px; top: 40%; right: 10%; color: var(--accent); opacity: 0.04; animation-duration: 10s; }
+        @keyframes floatHeart { 0% { transform: translateY(0) rotate(0deg) scale(1); } 100% { transform: translateY(-30px) rotate(5deg) scale(1.05); } }
+
+        /* --- 4. TIPOGRAFIA IMPACTANTE --- */
+        h1 { 
+            font-family: 'Outfit', sans-serif; font-size: 5rem; font-weight: 800; 
+            background: var(--gradient-text); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -2px; line-height: 1; margin-bottom: 20px; animation: textShine 5s linear infinite; text-align: center;
+        }
+        @keyframes textShine { to { background-position: 300% center; } }
+        h2 { 
+            font-family: 'Outfit', sans-serif; font-size: 2.5rem; color: var(--primary-dark); 
+            letter-spacing: -1px; margin-bottom: 20px; position: relative; display: inline-block; text-align: center;
+        }
+        h2::after {
+            content: ''; display: block; width: 0; height: 4px; background: var(--primary);
+            transition: width 0.8s ease; margin: 5px auto 0 auto; border-radius: 2px;
+        }
+        section.active h2::after { width: 100px; }
+        h3 { font-size: 1.2rem; color: var(--text-color); margin-bottom: 10px; font-weight: 700; }
+        p, li { font-size: 1rem; line-height: 1.5; margin-bottom: 8px; color: var(--text-muted); text-align: justify; }
+        ul { padding-left: 20px; margin-bottom: 10px; }
+        strong { color: var(--primary); font-weight: 700; }
+        .badge { padding: 8px 24px; background: rgba(225, 29, 72, 0.08); border: 1px solid rgba(225, 29, 72, 0.2); border-radius: 50px; color: var(--primary); font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; display: inline-block; backdrop-filter: blur(5px); }
+
+        /* --- 5. CARDS & GRID --- */
+        .grid { display: grid; gap: 20px; width: 100%; max-width: 1200px; }
+        .g2 { grid-template-columns: 1fr 1fr; align-items: center; }
+        .g3 { grid-template-columns: 1fr 1fr 1fr; }
+        .sus-layout { grid-template-columns: 1fr 1fr; }
+        .full-width { grid-column: span 2; }
+        .card {
+            background: var(--card-bg); border: var(--card-border); border-radius: 24px; padding: 30px;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(16px); height: 100%; display: flex; flex-direction: column; justify-content: center;
+        }
+        .card:hover { transform: translateY(-5px) scale(1.01); box-shadow: var(--shadow-hover); border-color: var(--primary); background: rgba(255, 255, 255, 0.95); }
+        .icon-box { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 15px; border-radius: 16px; }
+        .icon-red { background: #ffe4e6; color: var(--primary); }
+        .icon-green { background: #d1fae5; color: var(--accent); }
+        .icon-blue { background: #e0f2fe; color: #0284c7; }
+        .icon-purple { background: #e0e7ff; color: var(--secondary); }
+        .img-reveal { position: relative; overflow: hidden; border-radius: 30px; width: 100%; height: 400px; box-shadow: var(--shadow-soft); background: #eee; }
+        .img-reveal img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.4); transition: transform 1.5s ease-out; }
+        .reveal-curtain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff1f2; transform-origin: bottom; transition: transform 1s ease-out 0.2s; z-index: 2; }
+        section.active .reveal-curtain { transform: scaleY(0); }
+        section.active .img-reveal img { transform: scale(1); }
+        .img-fallback { display: flex; align-items: center; justify-content: center; height: 100%; background: #f8fafc; color: var(--accent); flex-direction: column; border-radius: 16px; }
+        .chart-box { height: 300px; width: 100%; padding: 15px; background: rgba(255,255,255,0.6); border-radius: 20px; }
+
+        /* --- 6. ANIMAÇÕES --- */
+        .stagger-in { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        section.active .stagger-in { opacity: 1; transform: translateY(0); }
+        .d1 { transition-delay: 0.1s; } .d2 { transition-delay: 0.2s; } .d3 { transition-delay: 0.3s; } .d4 { transition-delay: 0.4s; }
+
+        /* --- 7. NAV --- */
+        .nav-dots { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 100; opacity: 0; transition: opacity 1s; }
+        .nav-dots.visible { opacity: 1; }
+        .dot { width: 10px; height: 10px; background: #cbd5e1; border-radius: 50%; cursor: pointer; transition: 0.3s; }
+        .dot.active { background: var(--primary); transform: scale(1.4); }
+        .progress-bar { position: fixed; bottom: 0; left: 0; height: 4px; background: var(--primary); z-index: 100; transition: width 0.3s; opacity: 0; }
+        .progress-bar.visible { opacity: 1; }
+
+        /* Mobile */
+        @media (max-width: 900px) {
+            h1 { font-size: 3rem; } h2 { font-size: 2rem; }
+            section { padding: 40px 20px; height: auto; min-height: 100vh; justify-content: flex-start; }
+            .grid { grid-template-columns: 1fr; gap: 20px; display: flex; flex-direction: column; }
+            .nav-dots { display: none; }
+            .img-reveal { height: 200px; }
+            .sus-layout .full-width { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTRODUÇÃO CINEMATOGRÁFICA -->
+    <div id="intro-loader">
+        <div class="ekg-wrapper">
+            <svg class="ekg-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+                <path class="ekg-path" d="M0,50 L50,50 L60,10 L70,90 L80,50 L100,50 L500,50" />
+            </svg>
+            <i class="fa-solid fa-heart-pulse heart-beat"></i>
+        </div>
+        <div class="intro-title">Saúde Pública</div>
+        <div class="team-container">
+            <div class="team-pill">Gisselaine</div>
+            <div class="team-pill">Evelin</div>
+            <div class="team-pill">Ívila</div>
+            <div class="team-pill">Francisca Vivina</div>
+        </div>
+        <!-- BOTÃO PREMIUM DE ENTRADA -->
+        <button class="enter-btn" onclick="startPresentation()">
+            <span>Iniciar Apresentação</span> <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+
+    <!-- Fundo Corações -->
+    <i class="fa-solid fa-heart-pulse bg-heart h1"></i>
+    <i class="fa-solid fa-heart-pulse bg-heart h2"></i>
+    <i class="fa-solid fa-heart-pulse bg-heart h3"></i>
+
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="nav-dots" id="navDots"></div>
+
+    <div class="container" id="scrollContainer">
+
+        <!-- SLIDE 1: CAPA -->
+        <section id="s1">
+            <div class="stagger-in d1"><div class="badge">Trabalho Acadêmico</div></div>
+            <h1 class="stagger-in d2">Saúde Pública</h1>
+            <p class="stagger-in d3" style="font-size: 1.5rem; color: #64748b; text-align: center;">
+                Uma análise aprofundada: Desafios Globais & A Realidade do Piauí
+            </p>
+            <div class="grid g3 stagger-in d4" style="margin-top: 60px;">
+                <div class="card" style="align-items: center; text-align: center;">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-users"></i></div>
+                    <h3>Coletividade</h3>
+                    <p style="font-size: 0.9rem;">Foco na saúde da população, não apenas do indivíduo.</p>
+                </div>
+                <div class="card" style="align-items: center; text-align: center;">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-location-dot"></i></div>
+                    <h3>Teresina-PI</h3>
+                    <p style="font-size: 0.9rem;">Estudo de caso do sistema de saúde local.</p>
+                </div>
+                <div class="card" style="align-items: center; text-align: center;">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-calendar"></i></div>
+                    <h3>Janeiro 2026</h3>
+                    <p style="font-size: 0.9rem;">Dados atualizados e perspectivas futuras.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 2: INTRODUÇÃO -->
+        <section id="s2">
+            <div class="grid g2">
+                <div class="stagger-in d1">
+                    <h2>Introdução ao Tema</h2>
+                    <p>A saúde pública é a ciência de proteger e melhorar a saúde das comunidades. Diferente da medicina clínica, que trata o doente, a saúde pública foca na <strong>prevenção</strong> e na promoção da qualidade de vida.</p>
+                    <p>Este trabalho conecta os conceitos globais da OMS com a prática diária no SUS em Teresina.</p>
+                    
+                    <div class="card" style="margin-top: 20px; border-left: 5px solid var(--primary);">
+                        <h3>Roteiro da Apresentação:</h3>
+                        <ul>
+                            <li><strong>Conceitos:</strong> Diferença entre saúde pública e clínica.</li>
+                            <li><strong>Global:</strong> O papel da OMS e as desigualdades.</li>
+                            <li><strong>Nacional:</strong> Os princípios do SUS (Sistema Único de Saúde).</li>
+                            <li><strong>Local:</strong> A rede de saúde de Teresina e o Hospital São Marcos.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="img-reveal stagger-in d2">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://imperium.org.br/wp-content/uploads/2025/04/close-up-doctor-with-stethoscope-menor.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-user-doctor\' style=\'font-size:60px;\'></i></div>'" alt="Intro">
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 3: CONCEITO -->
+        <section id="s3">
+            <div class="grid g2">
+                <div class="img-reveal stagger-in d1">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://www.versatilis.com.br/wp-content/uploads/2024/05/comunicacao-entre-profissionais-de-saude-e-pacientes.png" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-hospital-user\' style=\'font-size:60px;\'></i></div>'" alt="Conceito">
+                </div>
+                <div class="stagger-in d2">
+                    <h2>Conceitos Fundamentais</h2>
+                    <p>Para entender o sistema, precisamos distinguir duas abordagens complementares:</p>
+                    
+                    <div class="card" style="margin-top: 20px;">
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div class="icon-box icon-blue" style="font-size: 20px; width: 50px; height: 50px;"><i class="fa-solid fa-user-doctor"></i></div>
+                            <div>
+                                <h3 style="color: #0284c7; margin: 0;">Medicina Clínica</h3>
+                                <p style="font-size: 0.9rem; margin: 0;">Focada no diagnóstico e tratamento de doenças em indivíduos. "Curar quem já adoeceu".</p>
+                            </div>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+                        <div style="display: flex; gap: 15px;">
+                            <div class="icon-box icon-green" style="font-size: 20px; width: 50px; height: 50px;"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <h3 style="color: var(--accent); margin: 0;">Saúde Pública</h3>
+                                <p style="font-size: 0.9rem; margin: 0;">Focada na prevenção, vacinação e saneamento para a população. "Evitar que adoeçam".</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 4: GLOBAL -->
+        <section id="s4">
+            <h2 class="stagger-in d1">Cenário Global (OMS)</h2>
+            <p class="stagger-in d1" style="text-align: center; max-width: 800px;">A Organização Mundial da Saúde alerta para a "Transição Epidemiológica":</p>
+            
+            <div class="grid g2 stagger-in d2" style="margin-top: 30px;">
+                <div class="card" style="border-top: 5px solid var(--alert);">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-virus"></i></div>
+                    <h3>Doenças Infecciosas</h3>
+                    <ul>
+                        <li>Persistência de pandemias (COVID-19, Influenza).</li>
+                        <li>Risco crescente de "Superbactérias" (Resistência Antimicrobiana).</li>
+                        <li>Doenças tropicais negligenciadas.</li>
+                    </ul>
+                </div>
+                <div class="card" style="border-top: 5px solid #0284c7;">
+                    <div class="icon-box icon-blue"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <h3 style="color: #0284c7;">Doenças Crônicas (DCNTs)</h3>
+                    <ul>
+                        <li>Responsáveis por 70% das mortes globais.</li>
+                        <li>Diabetes, Hipertensão, Câncer.</li>
+                        <li>Causas: Envelhecimento populacional e estilo de vida.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 5: CENÁRIOS CRÍTICOS -->
+        <section id="s5">
+            <h2 class="stagger-in d1">Desigualdades Globais</h2>
+            <p class="stagger-in d1" style="text-align: center; max-width: 900px; margin-bottom: 20px;">A saúde reflete as condições socioeconômicas. Três exemplos críticos:</p>
+            <div class="grid g3 stagger-in d2">
+                <div class="card" style="border-top: 5px solid #ef4444;">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-earth-africa"></i></div>
+                    <h3>África Subsaariana</h3>
+                    <p style="font-size: 0.9rem;"><strong>Desafio: Infraestrutura</strong></p>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Altas taxas de HIV/AIDS e Malária.</li>
+                        <li>Falta de saneamento e água potável.</li>
+                        <li>Mortalidade infantil elevada.</li>
+                    </ul>
+                </div>
+                <div class="card" style="border-top: 5px solid #f59e0b;">
+                    <div class="icon-box" style="background: #fef3c7; color: #f59e0b;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h3>Venezuela</h3>
+                    <p style="font-size: 0.9rem;"><strong>Desafio: Colapso</strong></p>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Escassez de 90% dos medicamentos.</li>
+                        <li>Reemergência de doenças (Malária).</li>
+                        <li>Êxodo de médicos.</li>
+                    </ul>
+                </div>
+                <div class="card" style="border-top: 5px solid #0ea5e9;">
+                    <div class="icon-box icon-blue"><i class="fa-solid fa-earth-asia"></i></div>
+                    <h3>Indonésia</h3>
+                    <p style="font-size: 0.9rem;"><strong>Desafio: Geográfico</strong></p>
+                    <ul style="font-size: 0.85rem;">
+                        <li>Logística em milhares de ilhas.</li>
+                        <li>Altas taxas de tabagismo.</li>
+                        <li>Desafios na cobertura universal.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 6: SUS -->
+        <section id="s6">
+            <span class="badge stagger-in d1">Brasil</span>
+            <h2 class="stagger-in d2">O Sistema Único de Saúde (SUS)</h2>
+            <div class="grid sus-layout stagger-in d3" style="margin-top: 30px;">
+                <div class="card">
+                    <div class="icon-box icon-green"><i class="fa-solid fa-universal-access"></i></div>
+                    <h3>Universalidade</h3>
+                    <p>A saúde é um direito de <strong>todos</strong> e dever do Estado. Acesso gratuito independente de renda.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box icon-blue"><i class="fa-solid fa-hands-holding-circle"></i></div>
+                    <h3>Integralidade</h3>
+                    <p>O cidadão deve ser atendido em todas as suas necessidades, da vacina ao transplante.</p>
+                </div>
+                <div class="card full-width" style="background: #f0fdf4; border: 2px solid var(--accent);">
+                    <div style="display: flex; align-items: center; gap: 30px;">
+                        <div class="icon-box icon-green"><i class="fa-solid fa-scale-balanced"></i></div>
+                        <div>
+                            <h3 style="color: var(--accent);">Equidade</h3>
+                            <p style="margin: 0;">Justiça Social: O sistema deve tratar desigualmente os desiguais, investindo mais recursos onde a carência social é maior.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 7: APS -->
+        <section id="s7">
+            <div class="grid g2">
+                <div class="stagger-in d1">
+                    <h2>Atenção Primária à Saúde</h2>
+                    <p>A "porta de entrada" do SUS. É onde se resolvem <strong>80%</strong> dos problemas de saúde da comunidade.</p>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 style="color: var(--primary);">Estratégia Saúde da Família (ESF)</h3>
+                        <p>O modelo brasileiro de sucesso mundial:</p>
+                        <ul>
+                            <li><strong>Equipe:</strong> Médico, Enfermeiro, Técnicos e Dentistas.</li>
+                            <li><strong>Agente Comunitário (ACS):</strong> Visita as casas, verifica vacinas e focos de dengue.</li>
+                            <li><strong>Foco:</strong> Pré-natal, Hipertensão e Diabetes.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="img-reveal stagger-in d2">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f6/M%C3%A9dico_de_fam%C3%ADlia.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-stethoscope\' style=\'font-size:60px;\'></i></div>'" alt="APS">
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 8: TERESINA -->
+        <section id="s8">
+            <h2 class="stagger-in d1">Teresina: Pólo Regional</h2>
+            <p class="stagger-in d2" style="margin-bottom: 40px;">Referência de Alta Complexidade para o Meio-Norte (PI, MA, PA). Rede gerida pela FMS.</p>
+            <div class="grid g3 stagger-in d3">
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-red" style="margin: 0 auto 15px auto;"><i class="fa-solid fa-truck-medical"></i></div>
+                    <h3>HUT</h3>
+                    <p>Hospital de Urgência de Teresina. Maior pronto-socorro do estado, referência em trauma.</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-blue" style="margin: 0 auto 15px auto;"><i class="fa-solid fa-baby"></i></div>
+                    <h3>Maternidades</h3>
+                    <p>4 unidades da Rede Cegonha cobrindo todas as zonas da cidade.</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-green" style="margin: 0 auto 15px auto;"><i class="fa-solid fa-house-medical"></i></div>
+                    <h3>90+ UBS</h3>
+                    <p>Ampla cobertura de Atenção Básica nas zonas urbana e rural.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 9: DOENÇAS -->
+        <section id="s9">
+            <div class="grid g2">
+                <div class="img-reveal stagger-in d1">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://static.biologianet.com/conteudo/images/acabar-com-mosquito-emaedes-aegyptiem-essencial-para-encerrar-grave-epidemia-dengue-566b22dd6ad6c.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-mosquito\' style=\'font-size:60px;\'></i></div>'" alt="Mosquito">
+                </div>
+                <div class="stagger-in d2">
+                    <h2>Epidemiologia Local</h2>
+                    <p>Desafios específicos do clima e geografia do Piauí:</p>
+                    <div class="card" style="margin-bottom: 20px;">
+                        <h3 class="text-red"><i class="fa-solid fa-mosquito"></i> Arboviroses</h3>
+                        <p><strong>Dengue, Zika, Chikungunya.</strong> Transmitidas pelo Aedes aegypti. Picos sazonais no período chuvoso.</p>
+                    </div>
+                    <div class="card">
+                        <h3 style="color: #0284c7;"><i class="fa-solid fa-dog"></i> Zoonoses</h3>
+                        <p><strong>Calazar (Leishmaniose):</strong> O Piauí é área endêmica. Transmitido pelo mosquito-palha. Afeta humanos e cães.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 10: PACTUAÇÃO -->
+        <section id="s10">
+            <h2 class="stagger-in d1">Desafio da Pactuação</h2>
+            <div class="grid g2 stagger-in d2" style="margin-top: 30px;">
+                <div class="chart-box">
+                    <canvas id="pactuacaoChart"></canvas>
+                </div>
+                <div>
+                    <div class="card" style="border-left: 6px solid var(--alert);">
+                        <h3 style="font-size: 4rem; color: var(--alert); margin-bottom: 5px;" class="counter" data-target="40" data-suffix="%">0%</h3>
+                        <p>Dos pacientes de alta complexidade vêm de <strong>outros municípios</strong>.</p>
+                    </div>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3 class="text-red">Impactos:</h3>
+                        <ul>
+                            <li>Sobrecarga de leitos de UTI e macas nos corredores.</li>
+                            <li>Filas de espera para cirurgias eletivas.</li>
+                            <li>Déficit financeiro (Custo real > Repasse federal).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 11: SÃO MARCOS -->
+        <section id="s11">
+            <div class="grid g2">
+                <div class="stagger-in d1">
+                    <div class="badge">Filantropia</div>
+                    <h2>Hospital São Marcos</h2>
+                    <p>Associação Piauiense de Combate ao Câncer (APCC). Uma instituição privada, filantrópica e parceira vital do SUS.</p>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Destaques:</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li style="margin-bottom: 15px;"><i class="fa-solid fa-check-circle" style="color: var(--accent); margin-right: 10px;"></i> <strong>Oncologia:</strong> Referência Norte/Nordeste em tratamento de câncer.</li>
+                            <li style="margin-bottom: 15px;"><i class="fa-solid fa-check-circle" style="color: var(--accent); margin-right: 10px;"></i> <strong>Pesquisa:</strong> Ensino e estudos clínicos avançados.</li>
+                            <li><i class="fa-solid fa-check-circle" style="color: var(--accent); margin-right: 10px;"></i> <strong>Social:</strong> Milhares de atendimentos gratuitos via SUS.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="img-reveal stagger-in d2">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://www.gp1.com.br/media/image_bank/2025/4/hospital-sao-marcosnone.jpeg.1200x0_q95_crop.webp" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-hospital\' style=\'font-size:60px;\'></i></div>'" alt="São Marcos">
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 12: SAÚDE MENTAL -->
+        <section id="s12">
+            <h2 class="stagger-in d1">Saúde Mental</h2>
+            <div class="grid g2 stagger-in d2">
+                <div style="width: 100%;">
+                    <div class="chart-box">
+                        <canvas id="mentalChart"></canvas>
+                    </div>
+                    <!-- Legenda Explicativa Atualizada -->
+                    <p style="font-size: 0.85rem; margin-top: 15px; color: var(--text-muted); text-align: justify; background: rgba(255,255,255,0.6); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <strong style="color: var(--secondary); display: block; margin-bottom: 5px;">*Outros/Misto (45%):</strong> 
+                        Inclui Transtorno Bipolar, Esquizofrenia, TDAH, T. Alimentares e comorbilidades (ex: ansiedade + depressão).
+                    </p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="card" style="text-align: center;">
+                        <h3 style="font-size: 3.5rem; color: var(--primary);">
+                            <span class="counter" data-target="1" data-suffix=" Bilhão">0</span>
+                        </h3>
+                        <p>Pessoas afetadas globalmente (OMS).</p>
+                    </div>
+                    <div class="card">
+                        <h3 style="color: #0284c7;">Desafios:</h3>
+                        <ul>
+                            <li><strong>Estigma:</strong> Preconceito impede a busca por ajuda.</li>
+                            <li><strong>Estrutura:</strong> Necessidade de ampliar a rede de CAPS.</li>
+                            <li><strong>Prevenção:</strong> Foco em saúde mental nas escolas.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 13: CLIMA -->
+        <section id="s13">
+            <h2 class="stagger-in d1">Impacto Climático (B-R-O Bró)</h2>
+            <p class="stagger-in d1" style="margin-bottom: 30px;">Em Teresina, o calor extremo não é só clima, é uma questão de saúde pública.</p>
+            
+            <div class="grid g3 stagger-in d2">
+                <div class="card">
+                    <div class="icon-box icon-red"><i class="fa-solid fa-mosquito"></i></div>
+                    <h3>Vetores</h3>
+                    <p>O calor constante amplia o ciclo de reprodução do <em>Aedes aegypti</em>, mantendo o risco de Dengue o ano todo.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box icon-green" style="background: #fef3c7; color: #f59e0b;"><i class="fa-solid fa-sun"></i></div>
+                    <h3>Hipertermia</h3>
+                    <p>Risco elevado de desidratação, insolação e mal súbito, especialmente em idosos e crianças.</p>
+                </div>
+                <div class="card">
+                    <div class="icon-box icon-blue"><i class="fa-solid fa-droplet-slash"></i></div>
+                    <h3>Secas</h3>
+                    <p>Escassez de água leva ao armazenamento inadequado (focos de mosquito) e consumo de água imprópria (doenças hídricas).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 14: TELEMEDICINA -->
+        <section id="s14">
+            <div class="grid g2">
+                <div class="img-reveal stagger-in d1">
+                    <div class="reveal-curtain"></div>
+                    <img src="https://www.pi.gov.br/wp-content/uploads/2025/04/piaui_saude_digital-1024x910.png" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'img-fallback\'><i class=\'fa-solid fa-laptop-medical\' style=\'font-size:60px;\'></i></div>'" alt="Digital">
+                </div>
+                <div class="stagger-in d2">
+                    <span class="badge">Inovação</span>
+                    <h2>Piauí Saúde Digital</h2>
+                    <p>Um programa revolucionário conectando especialistas da capital ao interior profundo.</p>
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Benefícios Práticos:</h3>
+                        <ul>
+                            <li><strong>Redução de Viagens:</strong> Fim da "ambulancioterapia" desnecessária.</li>
+                            <li><strong>Acesso:</strong> Consultas com Dermatologistas e Cardiologistas.</li>
+                            <li><strong>Telediagnóstico:</strong> Laudos de ECG e Raio-X remotos.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 15: FUTURO -->
+        <section id="s15">
+            <h2 class="stagger-in d1">O Futuro da Saúde</h2>
+            <div class="grid g3 stagger-in d2" style="margin-top: 40px;">
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-blue" style="margin: 0 auto 20px auto;"><i class="fa-solid fa-database"></i></div>
+                    <h3>Big Data e IA</h3>
+                    <p>Uso de inteligência artificial para previsão de surtos epidêmicos e gestão eficiente de estoques.</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-green" style="margin: 0 auto 20px auto;"><i class="fa-solid fa-dna"></i></div>
+                    <h3>Medicina de Precisão</h3>
+                    <p>Tratamentos personalizados baseados no perfil genético do paciente, especialmente na oncologia (ex: Hospital São Marcos).</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="icon-box icon-purple" style="margin: 0 auto 20px auto;"><i class="fa-solid fa-network-wired"></i></div>
+                    <h3>Integração Digital</h3>
+                    <p>Prontuário Eletrônico Unificado (PEC) conectando dados de saúde entre municípios, estado e rede privada em tempo real.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SLIDE 16: CONCLUSÃO -->
+        <section id="s16">
+            <div class="stagger-in d1" style="text-align: center;">
+                <i class="fa-solid fa-circle-check" style="font-size: 8rem; color: var(--accent); margin-bottom: 30px;"></i>
+                <h1>Conclusão</h1>
+                <p class="stagger-in d2" style="font-size: 1.5rem; max-width: 800px; margin: 0 auto;">
+                    O futuro do SUS depende da união estratégica entre <strong>Gestão, Financiamento e Inovação Tecnológica</strong>.
+                </p>
+                <button onclick="document.getElementById('s0').scrollIntoView({behavior:'smooth'})" class="stagger-in d3" style="margin-top: 60px; padding: 20px 50px; border-radius: 50px; border: none; background: var(--text-color); color: white; font-size: 1.2rem; cursor: pointer; transition: 0.3s;">Reiniciar Apresentação</button>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // FUNÇÃO DE INÍCIO SEGURA
+        function startPresentation() {
+            const loader = document.getElementById('intro-loader');
+            const mainContainer = document.getElementById('scrollContainer');
+            const navDots = document.getElementById('navDots');
+            const progressBar = document.getElementById('progressBar');
+
+            if(loader.classList.contains('hidden')) return; // Já iniciou
+
+            loader.classList.add('hidden');
+            mainContainer.classList.add('visible');
+            navDots.classList.add('visible');
+            progressBar.classList.add('visible');
+            
+            // Forçar a entrada da animação da capa
+            const s0 = document.getElementById('s0');
+            if (s0) s0.classList.add('active');
+        }
+
+        // CARREGAMENTO (AGUARDA CLIQUE)
+        window.addEventListener('load', () => {
+            // Removido o setTimeout automático.
+            // Agora a apresentação aguarda explicitamente o clique no botão "ENTRAR AGORA".
+            console.log("Apresentação carregada. Aguardando início manual.");
+        });
+
+        // 2. GERAÇÃO DE NAV DOTS
+        const container = document.querySelector('.container');
+        const sections = document.querySelectorAll('section');
+        const navDots = document.getElementById('navDots');
+        const progressBar = document.getElementById('progressBar');
+
+        sections.forEach((sec, index) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (index === 0) dot.classList.add('active');
+            dot.onclick = () => sec.scrollIntoView({ behavior: 'smooth' });
+            navDots.appendChild(dot);
+        });
+
+        // 3. ANIMATE COUNTER
+        function animateCounter(el) {
+            if(el.dataset.done) return;
+            el.dataset.done = "true";
+            const target = parseFloat(el.getAttribute('data-target'));
+            const suffix = el.getAttribute('data-suffix') || "";
+            const duration = 2000;
+            const start = 0;
+            const startTime = performance.now();
+            
+            el.innerText = start + suffix;
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 4);
+                const current = start + (target - start) * ease;
+                
+                // Exibe decimal se for pequeno
+                if (target <= 10 && target % 1 === 0) {
+                     el.innerText = current.toFixed(1) + suffix;
+                } else if (target % 1 === 0) {
+                     el.innerText = Math.floor(current) + suffix;
+                } else {
+                     el.innerText = current.toFixed(1) + suffix;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.innerText = (target % 1 === 0 ? target : target.toFixed(1)) + suffix;
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        // 4. OBSERVER PARA ATIVAÇÃO
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    
+                    const index = Array.from(sections).indexOf(entry.target);
+                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+                    progressBar.style.width = `${((index + 1) / sections.length) * 100}%`;
+
+                    if (entry.target.id === 's10') loadPactuacaoChart();
+                    if (entry.target.id === 's12') loadMentalChart();
+                    
+                    entry.target.querySelectorAll('.counter').forEach(c => animateCounter(c));
+                }
+            });
+        }, { threshold: 0.5 });
+
+        sections.forEach(s => observer.observe(s));
+
+        // 5. TECLADO
+        window.addEventListener('keydown', (e) => {
+            const current = Math.round(container.scrollTop / window.innerHeight);
+            if(e.key === 'ArrowDown') sections[current + 1]?.scrollIntoView({behavior: 'smooth'});
+            if(e.key === 'ArrowUp') sections[current - 1]?.scrollIntoView({behavior: 'smooth'});
+        });
+
+        // 6. GRÁFICOS
+        let chart1, chart2;
+
+        function loadPactuacaoChart() {
+            const canvas = document.getElementById('pactuacaoChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (chart1) chart1.destroy();
+            chart1 = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Outros', 'Teresina'],
+                    datasets: [{
+                        data: [40, 60],
+                        backgroundColor: ['#f43f5e', '#0ea5e9'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { animateScale: true, animateRotate: true, duration: 1500 },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function loadMentalChart() {
+            const canvas = document.getElementById('mentalChart');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (chart2) chart2.destroy();
+            chart2 = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ansiedade (30%)', 'Depressão (25%)', 'Outros* (45%)'],
+                    datasets: [{
+                        label: '%',
+                        data: [30, 25, 45],
+                        backgroundColor: ['#0ea5e9', '#6366f1', '#10b981'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { 
+                        duration: 2000, 
+                        easing: 'easeOutQuart',
+                        delay: (ctx) => ctx.dataIndex * 300
+                    },
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
